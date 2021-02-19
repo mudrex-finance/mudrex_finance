@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.6.12;
+
+interface IFund {
+
+    function deposit(uint256 amountWei) external;
+    function depositFor(uint256 amountWei, address holder) external;
+
+    function withdraw(uint256 numberOfShares) external;
+    function getPricePerFullShare() external view returns (uint256);
+
+    function underlyingBalanceWithInvestmentForHolder(address holder) view external returns (uint256);
+}
