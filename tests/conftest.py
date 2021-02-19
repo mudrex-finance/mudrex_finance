@@ -53,21 +53,17 @@ def fund_through_proxy(fund_factory, fund, token, accounts):
     return fund_through_proxy
 
 @pytest.fixture(scope="module")
-def profit_strategy_10(ProfitStrategy, fund_through_proxy, token, accounts):
-    return ProfitStrategy.deploy(token, fund_through_proxy, 1000, {'from': accounts[0]})
+def profit_strategy_10(ProfitStrategy, fund_through_proxy, accounts):
+    return ProfitStrategy.deploy(fund_through_proxy, 1000, {'from': accounts[0]})
 
 @pytest.fixture(scope="module")
-def profit_strategy_50(ProfitStrategy, fund_through_proxy, token, accounts):
-    return ProfitStrategy.deploy(token, fund_through_proxy, 5000, {'from': accounts[0]})
+def profit_strategy_50(ProfitStrategy, fund_through_proxy, accounts):
+    return ProfitStrategy.deploy(fund_through_proxy, 5000, {'from': accounts[0]})
 
 @pytest.fixture(scope="module")
-def profit_strategy_80(ProfitStrategy, fund_through_proxy, token, accounts):
-    return ProfitStrategy.deploy(token, fund_through_proxy, 8000, {'from': accounts[0]})
+def profit_strategy_80(ProfitStrategy, fund_through_proxy, accounts):
+    return ProfitStrategy.deploy(fund_through_proxy, 8000, {'from': accounts[0]})
 
 @pytest.fixture(scope="module")
-def profit_strategy_10_token_2(ProfitStrategy, fund_through_proxy, token_2, accounts):
-    return ProfitStrategy.deploy(token_2, fund_through_proxy, 1000, {'from': accounts[0]})
-
-@pytest.fixture(scope="module")
-def profit_strategy_10_fund_2(ProfitStrategy, fund_2, token, accounts):
-    return ProfitStrategy.deploy(token, fund_2, 1000, {'from': accounts[0]})
+def profit_strategy_10_fund_2(ProfitStrategy, fund_2, accounts):
+    return ProfitStrategy.deploy(fund_2, 1000, {'from': accounts[0]})

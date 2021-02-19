@@ -38,8 +38,8 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
 
   struct StrategyParams {
     uint256 weightage;  // weightage of total assets in fund this strategy can access (in BPS) (5000 for 50%)
-    uint256 activation;  // timestamp when strategy is added
     uint256 performanceFeeStrategy;   // in BPS, fee on yield of the strategy, goes to strategy creator
+    uint256 activation;  // timestamp when strategy is added
     uint256 lastProcessed;  // timestamp when strategy was last processed
     uint256 lastBalance;    // balance at last hard work
     uint256 indexInList;
@@ -86,15 +86,15 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     _;
   }
 
-  function fundManager() public view returns(address) {
+  function fundManager() external view returns(address) {
     return _fundManager();
   }
 
-  function underlying() public view returns(address) {
+  function underlying() external view override returns(address) {
     return _underlying();
   }
 
-  function underlyingUnit() public view returns(uint256) {
+  function underlyingUnit() external view returns(uint256) {
     return _underlyingUnit();
   }
 
@@ -111,15 +111,15 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     return strategyList; 
   }
 
-  // function getStrategy(address strategy) public view returns (StrategyParams memory strategyDetail) { 
-  //   return strategies[strategy]; 
-  // }
+  function getStrategy(address strategy) public view returns (StrategyParams memory strategyDetail) { 
+    return strategies[strategy]; 
+  }
 
   /*
   * Returns the cash balance across all users in this fund.
   */
   function underlyingBalanceInFund() internal view returns (uint256) {
-    return IERC20(underlying()).balanceOf(address(this));
+    return IERC20(_underlying()).balanceOf(address(this));
   }
 
   /* Returns the current underlying (e.g., DAI's) balance together with
@@ -139,8 +139,8 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
 
   function getPricePerFullShare() public override view returns (uint256) {
     return totalSupply() == 0
-        ? underlyingUnit()
-        : underlyingUnit().mul(underlyingBalanceWithInvestment()).div(totalSupply());
+        ? _underlyingUnit()
+        : _underlyingUnit().mul(underlyingBalanceWithInvestment()).div(totalSupply());
   }
 
   /* get the user's share (in underlying)
@@ -160,7 +160,6 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
 
   function addStrategy(address newStrategy, uint256 weightage, uint256 performanceFeeStrategy) external onlyFundManagerOrGovernance {
     require(newStrategy != ZERO_ADDRESS, "new newStrategy cannot be empty");
-    require((IStrategy(newStrategy).underlying() == address(underlying())), "Fund underlying must match Strategy underlying");
     require(IStrategy(newStrategy).fund() == address(this), "The strategy does not belong to this fund");
     require(isActiveStrategy(newStrategy) == false, "This strategy is already active in this fund");
     require(weightage > 0, "The weightage should be greater than 0");
@@ -175,8 +174,8 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     strategies[newStrategy].performanceFeeStrategy = performanceFeeStrategy;
     strategyList.push(newStrategy);
 
-    IERC20(underlying()).safeApprove(newStrategy, 0);
-    IERC20(underlying()).safeApprove(newStrategy, uint256(~0));
+    IERC20(_underlying()).safeApprove(newStrategy, 0);
+    IERC20(_underlying()).safeApprove(newStrategy, uint256(~0));
   }
 
   function removeStrategy(address activeStrategy) external onlyFundManagerOrGovernance {
@@ -191,8 +190,26 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     }
     strategyList.pop();
     delete strategies[activeStrategy];
-    IERC20(underlying()).safeApprove(activeStrategy, 0);
+    IERC20(_underlying()).safeApprove(activeStrategy, 0);
     IStrategy(activeStrategy).withdrawAllToFund();
+  }
+
+  function updateStrategyWeightage(address activeStrategy, uint256 newWeightage) external onlyFundManagerOrGovernance {
+    require(activeStrategy != ZERO_ADDRESS, "current strategy cannot be empty");
+    require(isActiveStrategy(activeStrategy), "This strategy is not active in this fund");
+    require(newWeightage > 0, "The weightage should be greater than 0");
+    require(_totalWeightInStrategies().sub(strategies[activeStrategy].weightage).add(newWeightage) <= MAX_INVESTMENT_IN_STRATEGIES, "Total investment can't be above 90%");
+
+    _setTotalWeightInStrategies(_totalWeightInStrategies().sub(strategies[activeStrategy].weightage).add(newWeightage));
+    strategies[activeStrategy].weightage = newWeightage;
+  }
+  
+  function updateStrategyPerformanceFee(address activeStrategy, uint256 newPerformanceFeeStrategy) external onlyFundManagerOrGovernance {
+    require(activeStrategy != ZERO_ADDRESS, "current strategy cannot be empty");
+    require(isActiveStrategy(activeStrategy), "This strategy is not active in this fund");
+    require(newPerformanceFeeStrategy <= MAX_PERFORMANCE_FEE_STRATEGY, "Performance fee too high");
+
+    strategies[activeStrategy].performanceFeeStrategy = newPerformanceFeeStrategy;
   }
 
   function processFees() internal {
@@ -209,7 +226,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
       if (profit > 0) {
         strategyCreatorFee = profit.mul(strategies[strategy].performanceFeeStrategy).div(MAX_BPS);
         if (strategyCreatorFee > 0) {
-          IERC20(underlying()).safeTransfer(IStrategy(strategy).creator(), strategyCreatorFee);
+          IERC20(_underlying()).safeTransfer(IStrategy(strategy).creator(), strategyCreatorFee);
         }
         fundManagerFee = profit.mul(_performanceFeeFund()).div(MAX_BPS);
       }
@@ -220,10 +237,10 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     
     if (fundManagerFeeTotal > 0) {
       address fundManagerRewards = (_fundManager() == governance()) ? _rewards() : _fundManager();
-      IERC20(underlying()).safeTransfer(fundManagerRewards, fundManagerFeeTotal);
+      IERC20(_underlying()).safeTransfer(fundManagerRewards, fundManagerFeeTotal);
     }
     if (platformFeeTotal > 0) {
-      IERC20(underlying()).safeTransfer(_rewards(), platformFeeTotal);
+      IERC20(_underlying()).safeTransfer(_rewards(), platformFeeTotal);
     }
   }
 
@@ -239,7 +256,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
       address strategy = strategyList[i];
       uint256 availableAmountForStrategy = availableAmount.mul(strategies[strategy].weightage).div(MAX_BPS);
       if (availableAmountForStrategy > 0) {
-        IERC20(underlying()).safeTransfer(strategy, availableAmountForStrategy);
+        IERC20(_underlying()).safeTransfer(strategy, availableAmountForStrategy);
         emit InvestInStrategy(strategy, availableAmountForStrategy);
       }
       
@@ -257,7 +274,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
   
   function rebalance() whenStrategyDefined onlyFundManagerOrGovernance external {
     uint256 totalUnderlyingWithInvestment = underlyingBalanceWithInvestment();
-    uint256[] storage toDeposit;
+    uint256[] memory toDeposit = new uint256[](getStrategyCount());
     
     for (uint256 i=0; i<getStrategyCount(); i++) {
       address strategy = strategyList[i];
@@ -265,16 +282,15 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
       uint256 currentlyInStrategy = IStrategy(strategy).investedUnderlyingBalance();
       if (currentlyInStrategy > shouldBeInStrategy) {    // withdraw from strategy
         IStrategy(strategy).withdrawToFund(currentlyInStrategy.sub(shouldBeInStrategy));
-      }
-      else {   // can not directly deposit here as there might not be enough balance before withdrawing from required strategies
-        toDeposit.push(shouldBeInStrategy.sub(currentlyInStrategy));
+      } else if (shouldBeInStrategy > currentlyInStrategy) {   // can not directly deposit here as there might not be enough balance before withdrawing from required strategies
+        toDeposit[i] = shouldBeInStrategy.sub(currentlyInStrategy);
       }  
     }
 
     for (uint256 i=0; i<getStrategyCount(); i++) {
       address strategy = strategyList[i];
       if (toDeposit[i] > 0) {
-        IERC20(underlying()).safeTransfer(strategy, toDeposit[i]);
+        IERC20(_underlying()).safeTransfer(strategy, toDeposit[i]);
         emit InvestInStrategy(strategy, toDeposit[i]);
       }
     }
@@ -321,7 +337,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
         : amount.mul(totalSupply()).div(underlyingBalanceWithInvestment());
     _mint(beneficiary, toMint);
 
-    IERC20(underlying()).safeTransferFrom(sender, address(this), amount);
+    IERC20(_underlying()).safeTransferFrom(sender, address(this), amount);
     emit Deposit(beneficiary, amount);
   }
 
@@ -352,8 +368,8 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     uint256 withdrawalFee = underlyingAmountToWithdraw.mul(_withdrawalFee()).div(MAX_BPS);
     underlyingAmountToWithdraw = underlyingAmountToWithdraw.sub(withdrawalFee);
 
-    IERC20(underlying()).safeTransfer(msg.sender, underlyingAmountToWithdraw);
-    IERC20(underlying()).safeTransfer(_rewards(), withdrawalFee);
+    IERC20(_underlying()).safeTransfer(msg.sender, underlyingAmountToWithdraw);
+    IERC20(_underlying()).safeTransfer(_rewards(), withdrawalFee);
     
     emit Withdraw(msg.sender, underlyingAmountToWithdraw, withdrawalFee);
   }
@@ -432,7 +448,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
 
   // no tokens should ever be stored on this contract. Any tokens that are sent here by mistake are recoverable by governance
   function sweep(address _token, address _sweepTo) external onlyGovernance {
-    require(_token != address(underlying()), "can not sweep underlying");
+    require(_token != address(_underlying()), "can not sweep underlying");
       IERC20(_token).safeTransfer(_sweepTo, IERC20(_token).balanceOf(address(this)));
   }
 }

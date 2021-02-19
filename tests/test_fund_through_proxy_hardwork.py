@@ -149,3 +149,39 @@ def test_hard_work_single_strategy_creator_fee_fund_fee_to_new_rewards_account(f
     expected_fund_performance_fee = expected_profit * (500/10000)
     assert token.balanceOf(accounts[0]) == expected_strategy_creator_fee
     assert token.balanceOf(accounts[5]) == expected_fund_performance_fee
+
+
+def test_rebalance_single_strategy(fund_through_proxy, accounts, token, profit_strategy_10):
+    token.mint(accounts[1], 100000000, {'from': accounts[0]})
+    token.approve(fund_through_proxy, 50000000, {'from': accounts[1]})
+    fund_through_proxy.deposit(50000000, {'from': accounts[1]})
+
+    token.grantRole(brownie.web3.keccak(text="MINTER_ROLE"), profit_strategy_10, {'from': accounts[0]})
+    fund_through_proxy.addStrategy(profit_strategy_10, 5000, 500, {'from': accounts[0]})
+
+    fund_through_proxy.doHardWork({'from': accounts[0]})
+    # profit_strategy_10.investAllUnderlying({'from': accounts[0]})  // No profit for easy testing
+    fund_through_proxy.updateStrategyWeightage(profit_strategy_10, 6000, {'from': accounts[0]})
+    tx = fund_through_proxy.rebalance({'from': accounts[0]})
+
+    assert profit_strategy_10.investedUnderlyingBalance() == (60/100 * 50000000)
+
+
+def test_rebalance_multiple_strategies(fund_through_proxy, accounts, token, profit_strategy_10, profit_strategy_50):
+    token.mint(accounts[1], 100000000, {'from': accounts[0]})
+    token.approve(fund_through_proxy, 50000000, {'from': accounts[1]})
+    fund_through_proxy.deposit(50000000, {'from': accounts[1]})
+
+    token.grantRole(brownie.web3.keccak(text="MINTER_ROLE"), profit_strategy_10, {'from': accounts[0]})
+    fund_through_proxy.addStrategy(profit_strategy_10, 5000, 500, {'from': accounts[0]})
+    token.grantRole(brownie.web3.keccak(text="MINTER_ROLE"), profit_strategy_50, {'from': accounts[0]})
+    fund_through_proxy.addStrategy(profit_strategy_50, 2000, 500, {'from': accounts[0]})
+
+    fund_through_proxy.doHardWork({'from': accounts[0]})
+    # profit_strategy_10.investAllUnderlying({'from': accounts[0]})  // No profit for easy testing
+    fund_through_proxy.updateStrategyWeightage(profit_strategy_10, 7000, {'from': accounts[0]})
+    fund_through_proxy.updateStrategyWeightage(profit_strategy_50, 1000, {'from': accounts[0]})
+    fund_through_proxy.rebalance({'from': accounts[0]})
+
+    assert profit_strategy_10.investedUnderlyingBalance() == (70/100 * 50000000)
+    assert profit_strategy_50.investedUnderlyingBalance() == (10/100 * 50000000)

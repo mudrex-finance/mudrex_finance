@@ -8,10 +8,10 @@ import "OpenZeppelin/openzeppelin-contracts@3.4.0/contracts/math/SafeMath.sol";
 import "OpenZeppelin/openzeppelin-contracts@3.4.0/contracts/token/ERC20/SafeERC20.sol";
 import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IFund.sol";
-import "../utils/Governable.sol";
+import "../../interfaces/IGovernable.sol";
 
 
-contract ProfitStrategy is IStrategy, Governable {
+contract ProfitStrategy is IStrategy {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -28,19 +28,19 @@ contract ProfitStrategy is IStrategy, Governable {
   // These tokens cannot be claimed by the controller
   mapping (address => bool) public unsalvagableTokens;
 
-  constructor(address _underlying, address _fund, uint256 _profitPerc) public {
-    require(_underlying != address(0), "Underlying cannot be empty");
+  constructor(address _fund, uint256 _profitPerc) public {
     require(_fund != address(0), "Fund cannot be empty");
     // We assume that this contract is a minter on underlying
-    underlying = _underlying;
     fund = _fund;
+    underlying = IFund(fund).underlying();
     profitPerc = _profitPerc;
     creator = msg.sender;
-    Governable.initializeGovernance(
-      msg.sender
-    );
   }
 
+  function governance() internal returns(address) {
+    return IGovernable(fund).governance();
+  }
+  
   function depositArbCheck() public override view returns(bool) {
     return true;
   }
@@ -94,8 +94,9 @@ contract ProfitStrategy is IStrategy, Governable {
   }
 
   // no tokens apart from underlying should be sent to this contract. Any tokens that are sent here by mistake are recoverable by governance
-  function sweep(address _token, address _sweepTo) external onlyGovernance {
+  function sweep(address _token, address _sweepTo) external {
+    require(governance() == msg.sender, "Not governance");
     require(_token != underlying, "can not sweep underlying");
-      IERC20(_token).safeTransfer(_sweepTo, IERC20(_token).balanceOf(address(this)));
+    IERC20(_token).safeTransfer(_sweepTo, IERC20(_token).balanceOf(address(this)));
   }
 }
