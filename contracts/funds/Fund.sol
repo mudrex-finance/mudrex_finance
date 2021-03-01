@@ -9,13 +9,14 @@ import "OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts/math/Saf
 import "OpenZeppelin/openzeppelin-contracts@3.4.0/contracts/token/ERC20/IERC20.sol";
 import "OpenZeppelin/openzeppelin-contracts@3.4.0/contracts/token/ERC20/SafeERC20.sol";
 import "OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts/token/ERC20/ERC20Upgradeable.sol";
+import "OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts/utils/ReentrancyGuardUpgradeable.sol";
 import "../../interfaces/IFund.sol";
 import "../../interfaces/IUpgradeSource.sol";
 import "../../interfaces/IStrategy.sol";
 import "../utils/Governable.sol";
 import "./FundStorage.sol";
 
-contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorage {
+contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSource, Governable, FundStorage {
   using SafeERC20 for IERC20;
   using AddressUpgradeable for address;
   using SafeMathUpgradeable for uint256;
@@ -61,6 +62,8 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
       _name,
       _symbol
     );
+
+    __ReentrancyGuard_init();
     
     Governable.initializeGovernance(
       _governance
@@ -81,7 +84,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     _;
   }
 
-  modifier whenNotDepositsPaused() {
+  modifier whenDepositsNotPaused() {
     require(!_depositsPaused(), "Deposits are paused");
     _;
   }
@@ -304,7 +307,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
   * Allows for depositing the underlying asset in exchange for shares.
   * Approval is assumed.
   */
-  function deposit(uint256 amount) external override whenNotDepositsPaused {
+  function deposit(uint256 amount) external override nonReentrant whenDepositsNotPaused {
     _deposit(amount, msg.sender, msg.sender);
   }
 
@@ -312,7 +315,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
   * Allows for depositing the underlying asset and shares assigned to the holder.
   * This facilitates depositing for someone else (e.g. using DepositHelper)
   */
-  function depositFor(uint256 amount, address holder) public override whenNotDepositsPaused {
+  function depositFor(uint256 amount, address holder) external override nonReentrant whenDepositsNotPaused {
     _deposit(amount, msg.sender, holder);
   }
 
@@ -341,7 +344,7 @@ contract Fund is ERC20Upgradeable, IFund, IUpgradeSource, Governable, FundStorag
     emit Deposit(beneficiary, amount);
   }
 
-  function withdraw(uint256 numberOfShares) external override {
+  function withdraw(uint256 numberOfShares) external override nonReentrant {
     require(totalSupply() > 0, "Fund has no shares");
     require(numberOfShares > 0, "numberOfShares must be greater than 0");
     

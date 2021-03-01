@@ -45,7 +45,7 @@ contract ProfitStrategy is IStrategy {
     return true;
   }
 
-  modifier restricted() {
+  modifier onlyFundOrGovernance() {
     require(msg.sender == fund || msg.sender == governance(),
       "The sender has to be the governance or fund");
     _;
@@ -73,7 +73,7 @@ contract ProfitStrategy is IStrategy {
   /*
   * Cashes everything out and withdraws to the fund
   */
-  function withdrawAllToFund() external override restricted {
+  function withdrawAllToFund() external override onlyFundOrGovernance {
     IERC20(underlying).safeTransfer(fund, IERC20(underlying).balanceOf(address(this)));
     accountedBalance = IERC20(underlying).balanceOf(address(this));
   }
@@ -81,7 +81,7 @@ contract ProfitStrategy is IStrategy {
   /*
   * Cashes some amount out and withdraws to the fund
   */
-  function withdrawToFund(uint256 amount) external override restricted {
+  function withdrawToFund(uint256 amount) external override onlyFundOrGovernance {
     IERC20(underlying).safeTransfer(fund, amount);
     accountedBalance = IERC20(underlying).balanceOf(address(this));
   }
@@ -89,7 +89,7 @@ contract ProfitStrategy is IStrategy {
   /*
   * Honest harvesting. It's not much, but it pays off
   */
-  function doHardWork() external override restricted {
+  function doHardWork() external override onlyFundOrGovernance {
     // investAllUnderlying();   // call this externally for testing as profit geeneration should be after invesment
   }
 
