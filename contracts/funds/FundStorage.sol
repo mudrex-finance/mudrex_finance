@@ -15,8 +15,13 @@ contract FundStorage is Initializable {
   bytes32 internal constant _PERFORMANCE_FEE_FUND_SLOT = 0x67d7fa60453a87c46fdf39c2c97af9a4efa92447137fc01141db0c762bd177ed;
   bytes32 internal constant _PLATFORM_FEE_SLOT = 0xdb914d4ecf1b46de61e1ef0abb3324d8ae5bb0f8e2d834e2a2c8ef6347fad40a;
   bytes32 internal constant _WITHDRAWAL_FEE_SLOT = 0xf6e3df965b199051d61624db5fab1794c9669f468a90df79a78aa7b0e55b338a;
+  bytes32 internal constant _MAX_INVESTMENT_IN_STRATEGIES_SLOT = 0xac70a1670fe19ee7e0602c0950417634b6584c7b4232fa5df9f49111c5557934;
   bytes32 internal constant _TOTAL_WEIGHT_IN_STRATEGIES_SLOT = 0x9133abd018b6fde28d66aca2ecd382fecf17ffa40fe22c4e0289322fefbd7b9e;
+  bytes32 internal constant _TOTAL_ACCOUNTED_SLOT = 0x9ead72750dc13281a9f039b34e3371c56895558984b60f278cb7add9f9149177;
+  bytes32 internal constant _TOTAL_INVESTED_SLOT = 0x98a6f29fda853c583d893d7dcade92c0eed126b239c85998829c2e1a68fac1b9;
   bytes32 internal constant _DEPOSITS_PAUSED_SLOT = 0x34b904506aeff8cce013d1019a67832c48d47a000b028cb65d615b851146b9e7;
+  bytes32 internal constant _SHOULD_REBALANCE_SLOT = 0xdf9eebd73c8ef0a729535a9beb9ea86fe8f224c6cec5fa940c8f06696acf2b3f;
+  bytes32 internal constant _LAST_HARDWORK_TIMESTAMP_SLOT = 0x8a707ee777f050560006c09cf98a16653902a051a88d4d43dcad61827e3ab091;
 
   constructor() public {
     assert(_UNDERLYING_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.underlying")) - 1));
@@ -29,8 +34,13 @@ contract FundStorage is Initializable {
     assert(_PERFORMANCE_FEE_FUND_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.performanceFeeFund")) - 1));
     assert(_PLATFORM_FEE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.platformFee")) - 1));
     assert(_WITHDRAWAL_FEE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.withdrawalFee")) - 1));
+    assert(_MAX_INVESTMENT_IN_STRATEGIES_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.maxInvestmentInStrategies")) - 1));
     assert(_TOTAL_WEIGHT_IN_STRATEGIES_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.totalWeightInStrategies")) - 1));
+    assert(_TOTAL_ACCOUNTED_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.totalAccounted")) - 1));
+    assert(_TOTAL_INVESTED_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.totalInvested")) - 1));
     assert(_DEPOSITS_PAUSED_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositsPaused")) - 1));
+    assert(_SHOULD_REBALANCE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.shouldRebalance")) - 1));
+    assert(_LAST_HARDWORK_TIMESTAMP_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.lastHardworkTimestamp")) - 1));
   }
 
 
@@ -50,8 +60,13 @@ contract FundStorage is Initializable {
     _setPerformanceFeeFund(0);
     _setPlatformFee(0);
     _setWithdrawalFee(0);
+    _setMaxInvestmentInStrategies(9000);   // 9000 BPS (90%) can be accessed by the strategies. This is to keep something in fund for withdrawal.
     _setTotalWeightInStrategies(0);
+    _setTotalAccounted(0);
+    _setTotalInvested(0);
     _setDepositsPaused(false);
+    _setShouldRebalance(false);
+    _setLastHardworkTimestamp(0);
   }
 
   function _setUnderlying(address _address) internal {
@@ -134,6 +149,14 @@ contract FundStorage is Initializable {
     return getUint256(_WITHDRAWAL_FEE_SLOT);
   }
 
+  function _setMaxInvestmentInStrategies(uint256 _value) internal {
+    setUint256(_MAX_INVESTMENT_IN_STRATEGIES_SLOT, _value);
+  }
+
+  function _maxInvestmentInStrategies() internal view returns (uint256) {
+    return getUint256(_MAX_INVESTMENT_IN_STRATEGIES_SLOT);
+  }
+
   function _setTotalWeightInStrategies(uint256 _value) internal {
     setUint256(_TOTAL_WEIGHT_IN_STRATEGIES_SLOT, _value);
   }
@@ -142,12 +165,44 @@ contract FundStorage is Initializable {
     return getUint256(_TOTAL_WEIGHT_IN_STRATEGIES_SLOT);
   }
 
+  function _setTotalAccounted(uint256 _value) internal {
+    setUint256(_TOTAL_ACCOUNTED_SLOT, _value);
+  }
+
+  function _totalAccounted() internal view returns (uint256) {
+    return getUint256(_TOTAL_ACCOUNTED_SLOT);
+  }
+
+  function _setTotalInvested(uint256 _value) internal {
+    setUint256(_TOTAL_INVESTED_SLOT, _value);
+  }
+
+  function _totalInvested() internal view returns (uint256) {
+    return getUint256(_TOTAL_INVESTED_SLOT);
+  }
+
   function _setDepositsPaused(bool _value) internal {
     setBool(_DEPOSITS_PAUSED_SLOT, _value);
   }
 
   function _depositsPaused() internal view returns (bool) {
     return getBool(_DEPOSITS_PAUSED_SLOT);
+  }
+
+  function _setShouldRebalance(bool _value) internal {
+    setBool(_SHOULD_REBALANCE_SLOT, _value);
+  }
+
+  function _shouldRebalance() internal view returns (bool) {
+    return getBool(_SHOULD_REBALANCE_SLOT);
+  }
+
+  function _setLastHardworkTimestamp(uint256 _value) internal {
+    setUint256(_LAST_HARDWORK_TIMESTAMP_SLOT, _value);
+  }
+
+  function _lastHardworkTimestamp() internal view returns (uint256) {
+    return getUint256(_LAST_HARDWORK_TIMESTAMP_SLOT);
   }
 
   function setAddress(bytes32 slot, address _address) private {

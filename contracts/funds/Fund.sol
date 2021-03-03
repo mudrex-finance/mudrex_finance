@@ -24,14 +24,16 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
   event Withdraw(address indexed beneficiary, uint256 amount, uint256 fee);
   event Deposit(address indexed beneficiary, uint256 amount);
   event InvestInStrategy(address strategy, uint256 amount);
-  event StrategyProfit(address strategy, uint256 profit, uint256 strategyCreatorFee, uint256 fundManagerFee, uint256 platformFee);
+  event StrategyRewards(address strategy, uint256 profit, uint256 strategyCreatorFee);
+  event FundManagerRewards(uint256 profitTotal, uint256 fundManagerFee);
+  event PlatformRewards(uint256 lastBalance, uint256 timeElapsed, uint256 platformFee);
+  event TestEvent(uint256 lastBalance, uint256 timeElapsed, uint256 platformFee, uint256 fundManagerFee);
 
   address internal constant ZERO_ADDRESS = address(0);
 
   uint256 internal constant MAX_BPS = 10000;   // 100% in basis points
   uint256 internal constant SECS_PER_YEAR = 31556952;  // 365.25 days from yearn
   
-  uint256 internal constant MAX_INVESTMENT_IN_STRATEGIES = 9000;   // 90% can be accessed by the strategies. This is to keep something in fund for withdrawal.
   uint256 internal constant MAX_PLATFORM_FEE = 500;  // 5% (annual on AUM), goes to governance/treasury
   uint256 internal constant MAX_PERFORMANCE_FEE_FUND = 1000;  // 10% on profits, goes to fund manager
   uint256 internal constant MAX_PERFORMANCE_FEE_STRATEGY = 1000;  // 10% on profits, goes to strategy creator
@@ -41,7 +43,6 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
     uint256 weightage;  // weightage of total assets in fund this strategy can access (in BPS) (5000 for 50%)
     uint256 performanceFeeStrategy;   // in BPS, fee on yield of the strategy, goes to strategy creator
     uint256 activation;  // timestamp when strategy is added
-    uint256 lastProcessed;  // timestamp when strategy was last processed
     uint256 lastBalance;    // balance at last hard work
     uint256 indexInList;
   }
@@ -166,13 +167,12 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
     require(IStrategy(newStrategy).fund() == address(this), "The strategy does not belong to this fund");
     require(isActiveStrategy(newStrategy) == false, "This strategy is already active in this fund");
     require(weightage > 0, "The weightage should be greater than 0");
-    require(_totalWeightInStrategies().add(weightage) <= MAX_INVESTMENT_IN_STRATEGIES, "Total investment can't be above 90%");
+    require(_totalWeightInStrategies().add(weightage) <= _maxInvestmentInStrategies(), "Total investment can't be above 90%");
     require(performanceFeeStrategy <= MAX_PERFORMANCE_FEE_STRATEGY, "Performance fee too high");
     
     strategies[newStrategy].weightage = weightage;
     _setTotalWeightInStrategies(_totalWeightInStrategies().add(weightage));
     strategies[newStrategy].activation = block.timestamp;
-    strategies[newStrategy].lastProcessed = block.timestamp;
     strategies[newStrategy].indexInList = getStrategyCount();
     strategies[newStrategy].performanceFeeStrategy = performanceFeeStrategy;
     strategyList.push(newStrategy);
@@ -201,10 +201,11 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
     require(activeStrategy != ZERO_ADDRESS, "current strategy cannot be empty");
     require(isActiveStrategy(activeStrategy), "This strategy is not active in this fund");
     require(newWeightage > 0, "The weightage should be greater than 0");
-    require(_totalWeightInStrategies().sub(strategies[activeStrategy].weightage).add(newWeightage) <= MAX_INVESTMENT_IN_STRATEGIES, "Total investment can't be above 90%");
+    require(_totalWeightInStrategies().sub(strategies[activeStrategy].weightage).add(newWeightage) <= _maxInvestmentInStrategies(), "Total investment can't be above 90%");
 
     _setTotalWeightInStrategies(_totalWeightInStrategies().sub(strategies[activeStrategy].weightage).add(newWeightage));
     strategies[activeStrategy].weightage = newWeightage;
+    _setShouldRebalance(true);
   }
   
   function updateStrategyPerformanceFee(address activeStrategy, uint256 newPerformanceFeeStrategy) external onlyFundManagerOrGovernance {
@@ -216,11 +217,11 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
   }
 
   function processFees() internal {
-    uint256 fundManagerFeeTotal = 0;
-    uint256 platformFeeTotal = 0;
+    uint256 profitTotal = 0;
+    uint256 platformFee = (_totalInvested() * (block.timestamp - _lastHardworkTimestamp())).mul(_platformFee()).div(MAX_BPS).div(SECS_PER_YEAR);
+    
     for (uint256 i=0; i<getStrategyCount(); i++) {
       address strategy = strategyList[i];
-      uint256 platformFee = (strategies[strategy].lastBalance * (block.timestamp - strategies[strategy].lastProcessed)).mul(_platformFee()).div(MAX_BPS).div(SECS_PER_YEAR);
         
       uint256 profit = MathUpgradeable.max((IStrategy(strategy).investedUnderlyingBalance() - strategies[strategy].lastBalance), 0);
       uint256 strategyCreatorFee = 0;
@@ -231,19 +232,20 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
         if (strategyCreatorFee > 0) {
           IERC20(_underlying()).safeTransfer(IStrategy(strategy).creator(), strategyCreatorFee);
         }
-        fundManagerFee = profit.mul(_performanceFeeFund()).div(MAX_BPS);
+        profitTotal = profitTotal.add(profit);
       }
-      emit StrategyProfit(strategy, profit, strategyCreatorFee, fundManagerFee, platformFee);
-      platformFeeTotal = platformFeeTotal.add(platformFee);
-      fundManagerFeeTotal = fundManagerFeeTotal.add(fundManagerFee);
+      emit StrategyRewards(strategy, profit, strategyCreatorFee);
     }
     
-    if (fundManagerFeeTotal > 0) {
+    uint256 fundManagerFee = profitTotal.mul(_performanceFeeFund()).div(MAX_BPS);
+    if (fundManagerFee > 0) {
       address fundManagerRewards = (_fundManager() == governance()) ? _rewards() : _fundManager();
-      IERC20(_underlying()).safeTransfer(fundManagerRewards, fundManagerFeeTotal);
+      IERC20(_underlying()).safeTransfer(fundManagerRewards, fundManagerFee);
+      emit FundManagerRewards(profitTotal, fundManagerFee);
     }
-    if (platformFeeTotal > 0) {
-      IERC20(_underlying()).safeTransfer(_rewards(), platformFeeTotal);
+    if (platformFee > 0) {
+      IERC20(_underlying()).safeTransfer(_rewards(), platformFee);
+      emit PlatformRewards(_totalInvested(), block.timestamp - _lastHardworkTimestamp(), platformFee);
     }
   }
 
@@ -252,36 +254,51 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
   * doHardWork on the current strategy. Call this through controller to claim hard rewards.
   */
   function doHardWork() whenStrategyDefined onlyFundManagerOrGovernance external {
-    processFees();
-    // ensure that new funds are invested too
-    uint256 availableAmount = underlyingBalanceInFund();
-    for (uint256 i=0; i<getStrategyCount(); i++) { 
-      address strategy = strategyList[i];
-      uint256 availableAmountForStrategy = availableAmount.mul(strategies[strategy].weightage).div(MAX_BPS);
-      if (availableAmountForStrategy > 0) {
-        IERC20(_underlying()).safeTransfer(strategy, availableAmountForStrategy);
-        emit InvestInStrategy(strategy, availableAmountForStrategy);
-      }
-      
-      IStrategy(strategy).doHardWork();
-      
-      strategies[strategy].lastBalance = IStrategy(strategy).investedUnderlyingBalance();
-      strategies[strategy].lastProcessed = block.timestamp;
+    if (_lastHardworkTimestamp() > 0) {
+      processFees();
     }
+    // ensure that new funds are invested too
+
+    if (_shouldRebalance()) {
+      rebalancedHardWork();
+    }
+    else {
+      uint256 lastReserve = _totalAccounted() > 0 ? _totalAccounted().sub(_totalInvested()) : 0;
+      uint256 availableAmountToInvest = underlyingBalanceInFund() > lastReserve ? underlyingBalanceInFund().sub(lastReserve) : 0;
+      require(availableAmountToInvest > 0, 'Not enough to invest');
+      _setTotalAccounted(_totalAccounted().add(availableAmountToInvest));
+      for (uint256 i=0; i<getStrategyCount(); i++) { 
+        address strategy = strategyList[i];
+        uint256 availableAmountForStrategy = availableAmountToInvest.mul(strategies[strategy].weightage).div(MAX_BPS);
+        if (availableAmountForStrategy > 0) {
+          IERC20(_underlying()).safeTransfer(strategy, availableAmountForStrategy);
+          _setTotalInvested(_totalInvested().add(availableAmountForStrategy));
+          emit InvestInStrategy(strategy, availableAmountForStrategy);
+        }
+        
+        IStrategy(strategy).doHardWork();
+        
+        strategies[strategy].lastBalance = IStrategy(strategy).investedUnderlyingBalance();
+      }
+    }
+    _setLastHardworkTimestamp(block.timestamp);
   }
 
   /*
-  * Should be used very carefully as this incurs huge gas cost.
+  * Should be used very carefully as this might incur huge gas cost.
   * Needed here as the weightage might divert from required weightages.
   */
   
-  function rebalance() whenStrategyDefined onlyFundManagerOrGovernance external {
+  function rebalancedHardWork() internal {
     uint256 totalUnderlyingWithInvestment = underlyingBalanceWithInvestment();
+    _setTotalAccounted(totalUnderlyingWithInvestment);
+    uint256 totalInvested = 0;
     uint256[] memory toDeposit = new uint256[](getStrategyCount());
     
     for (uint256 i=0; i<getStrategyCount(); i++) {
       address strategy = strategyList[i];
       uint256 shouldBeInStrategy = totalUnderlyingWithInvestment.mul(strategies[strategy].weightage).div(MAX_BPS);
+      totalInvested = totalInvested.add(shouldBeInStrategy);
       uint256 currentlyInStrategy = IStrategy(strategy).investedUnderlyingBalance();
       if (currentlyInStrategy > shouldBeInStrategy) {    // withdraw from strategy
         IStrategy(strategy).withdrawToFund(currentlyInStrategy.sub(shouldBeInStrategy));
@@ -289,6 +306,7 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
         toDeposit[i] = shouldBeInStrategy.sub(currentlyInStrategy);
       }  
     }
+    _setTotalInvested(totalInvested);
 
     for (uint256 i=0; i<getStrategyCount(); i++) {
       address strategy = strategyList[i];
@@ -296,6 +314,9 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
         IERC20(_underlying()).safeTransfer(strategy, toDeposit[i]);
         emit InvestInStrategy(strategy, toDeposit[i]);
       }
+      IStrategy(strategy).doHardWork();
+      
+      strategies[strategy].lastBalance = IStrategy(strategy).investedUnderlyingBalance();
     }
   }
 
@@ -387,17 +408,22 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
   function finalizeUpgrade() external override onlyGovernance {
   }
 
-  function setFundManager(address newFundManager) public onlyFundManagerOrGovernance {
+  function setFundManager(address newFundManager) external onlyFundManagerOrGovernance {
       _setFundManager(newFundManager);
   }
 
-  function setRewards(address newRewards) public onlyGovernance {
+  function setRewards(address newRewards) external onlyGovernance {
       _setRewards(newRewards);
   }
 
+  function setMaxInvestmentInStrategies(uint256 value) external onlyFundManagerOrGovernance {
+    require(value < MAX_BPS, "Value greater than 100%");
+    _setMaxInvestmentInStrategies(value);
+  }
+
   // if limit == 0 then there is no deposit limit
-  function setDepositLimit(uint256 limit) public onlyFundManagerOrGovernance {
-      _setDepositLimit(limit);
+  function setDepositLimit(uint256 limit) external onlyFundManagerOrGovernance {
+    _setDepositLimit(limit);
   }
 
   function depositLimit() external view returns(uint256) {
@@ -405,8 +431,8 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
   }
 
   // if limit == 0 then there is no deposit limit
-  function setDepositLimitTxMax(uint256 limit) public onlyFundManagerOrGovernance {
-      _setDepositLimitTxMax(limit);
+  function setDepositLimitTxMax(uint256 limit) external onlyFundManagerOrGovernance {
+    _setDepositLimitTxMax(limit);
   }
 
   function depositLimitTxMax() external view returns(uint256) {
@@ -414,35 +440,35 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
   }
 
   // if limit == 0 then there is no deposit limit
-  function setDepositLimitTxMin(uint256 limit) public onlyFundManagerOrGovernance {
-      _setDepositLimitTxMin(limit);
+  function setDepositLimitTxMin(uint256 limit) external onlyFundManagerOrGovernance {
+    _setDepositLimitTxMin(limit);
   }
 
   function depositLimitTxMin() external view returns(uint256) {
     return _depositLimitTxMin();
   }
 
-  function setPerformanceFeeFund(uint256 fee) public onlyFundManagerOrGovernance {
+  function setPerformanceFeeFund(uint256 fee) external onlyFundManagerOrGovernance {
     require(fee <= MAX_PERFORMANCE_FEE_FUND, "Fee greater than max limit");
-      _setPerformanceFeeFund(fee);
+    _setPerformanceFeeFund(fee);
   }
 
   function performanceFeeFund() external view returns(uint256) {
     return _performanceFeeFund();
   }
 
-  function setPlatformFee(uint256 fee) public onlyFundManagerOrGovernance {
+  function setPlatformFee(uint256 fee) external onlyFundManagerOrGovernance {
     require(fee <= MAX_PLATFORM_FEE, "Fee greater than max limit");
-      _setPlatformFee(fee);
+    _setPlatformFee(fee);
   }
 
   function platformFee() external view returns(uint256) {
     return _platformFee();
   }
 
-  function setWithdrawalFee(uint256 fee) public onlyFundManagerOrGovernance {
+  function setWithdrawalFee(uint256 fee) external onlyFundManagerOrGovernance {
     require(fee <= MAX_WITHDRAWAL_FEE, "Fee greater than max limit");
-      _setWithdrawalFee(fee);
+    _setWithdrawalFee(fee);
   }
 
   function withdrawalFee() external view returns(uint256) {
