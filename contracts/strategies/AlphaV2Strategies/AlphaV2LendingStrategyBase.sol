@@ -94,23 +94,22 @@ contract AlphaV2LendingStrategyBase is IStrategy {
   * and reinvest the rest. We can make it better by calculating the correct amount and withdrawing only that much.
   */
   function withdrawToFund(uint256 underlyingAmount) override external onlyFundOrGovernance {
-    if(IERC20(underlying).balanceOf(address(this)) >= underlyingAmount){
+    
+    uint256 underlyingBalanceBefore = IERC20(underlying).balanceOf(address(this));
+    
+    if(underlyingBalanceBefore >= underlyingAmount) {
       IERC20(underlying).safeTransfer(fund, underlyingAmount);
       return;
     }
 
-    // TODO: If we want to be more accurate, we need to calculate how much shares we will need here
-
-    uint256 shares = IAlphaV2(aBox).balanceOf(address(this));
+    uint256 shares = shareValueFromUnderlying(underlyingAmount.sub(underlyingBalanceBefore));
     IAlphaV2(aBox).withdraw(shares);
+    
     // we can transfer the asset to the fund
     uint256 underlyingBalance = IERC20(underlying).balanceOf(address(this));
     if (underlyingBalance > 0) {
       IERC20(underlying).safeTransfer(fund, Math.min(underlyingAmount, underlyingBalance));
     }
-
-    // invest back the rest
-    investAllUnderlying();
   }
 
   /**
@@ -173,5 +172,14 @@ contract AlphaV2LendingStrategyBase is IStrategy {
     uint256 precision = 10 ** 18;
     uint256 underlyingBalanceinABox = shares.mul(exchangeRate).div(precision);
     return underlyingBalanceinABox.add(IERC20(underlying).balanceOf(address(this)));
+  }
+
+  /**
+  * Returns the value of the underlying token in aBox ibToken
+  */
+  function shareValueFromUnderlying(uint256 underlyingAmount) internal view returns (uint256) {
+    return underlyingAmount
+      .mul(10 ** 18)
+      .div(ICErc20(IAlphaV2(aBox).cToken()).exchangeRateStored());
   }
 }

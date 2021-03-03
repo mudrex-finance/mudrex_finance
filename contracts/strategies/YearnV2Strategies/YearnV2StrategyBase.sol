@@ -93,23 +93,22 @@ contract YearnV2StrategyBase is IStrategy {
   * and reinvest the rest. We can make it better by calculating the correct amount and withdrawing only that much.
   */
   function withdrawToFund(uint256 underlyingAmount) override external onlyFundOrGovernance {
-    if(IERC20(underlying).balanceOf(address(this)) >= underlyingAmount){
+    
+    uint256 underlyingBalanceBefore = IERC20(underlying).balanceOf(address(this));
+    
+    if(underlyingBalanceBefore >= underlyingAmount) {
       IERC20(underlying).safeTransfer(fund, underlyingAmount);
       return;
     }
 
-    // TODO: If we want to be more accurate, we need to calculate how much shares we will need here
-
-    uint256 shares = IYVaultV2(yVault).balanceOf(address(this));
+    uint256 shares = shareValueFromUnderlying(underlyingAmount.sub(underlyingBalanceBefore));
     IYVaultV2(yVault).withdraw(shares);
+    
     // we can transfer the asset to the fund
     uint256 underlyingBalance = IERC20(underlying).balanceOf(address(this));
     if (underlyingBalance > 0) {
       IERC20(underlying).safeTransfer(fund, Math.min(underlyingAmount, underlyingBalance));
     }
-
-    // invest back the rest
-    investAllUnderlying();
   }
 
   /**
@@ -173,7 +172,7 @@ contract YearnV2StrategyBase is IStrategy {
   /**
   * Returns the value of the underlying token in yToken
   */
-  function yTokenValueFromUnderlying(uint256 underlyingAmount) internal view returns (uint256) {
+  function shareValueFromUnderlying(uint256 underlyingAmount) internal view returns (uint256) {
     // 1 yToken = this much underlying, 10 ** 18 precision for all tokens
     return underlyingAmount
       .mul(10 ** 18)

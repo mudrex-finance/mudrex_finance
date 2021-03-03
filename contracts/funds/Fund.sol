@@ -29,7 +29,7 @@ contract Fund is ERC20Upgradeable, ReentrancyGuardUpgradeable, IFund, IUpgradeSo
   address internal constant ZERO_ADDRESS = address(0);
 
   uint256 internal constant MAX_BPS = 10000;   // 100% in basis points
-  uint256 internal constant SECS_PER_YEAR = 31557600;  // 365.25 days
+  uint256 internal constant SECS_PER_YEAR = 31556952;  // 365.25 days from yearn
   
   uint256 internal constant MAX_INVESTMENT_IN_STRATEGIES = 9000;   // 90% can be accessed by the strategies. This is to keep something in fund for withdrawal.
   uint256 internal constant MAX_PLATFORM_FEE = 500;  // 5% (annual on AUM), goes to governance/treasury
