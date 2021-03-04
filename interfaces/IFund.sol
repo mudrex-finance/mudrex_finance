@@ -9,7 +9,9 @@ interface IFund {
     function depositFor(uint256 amountWei, address holder) external;
 
     function withdraw(uint256 numberOfShares) external;
-    function getPricePerFullShare() external view returns (uint256);
+    
+    function getPricePerShare() external view returns (uint256);
+    function totalValueLocked() external view returns (uint256);
 
     function underlyingBalanceWithInvestmentForHolder(address holder) view external returns (uint256);
 }

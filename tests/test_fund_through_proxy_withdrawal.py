@@ -87,7 +87,7 @@ def test_withdrawal_with_withdrawal_fee_and_changed_rewards(fund_through_proxy, 
     assert fund_through_proxy.balanceOf(accounts[1]) == 5000000   ## zero shares initially, so same amount minted as deposit
     
     fund_through_proxy.setWithdrawalFee(50, {'from': accounts[0]})
-    fund_through_proxy.setRewards(accounts[5], {'from': accounts[0]})
+    fund_through_proxy.setPlatformRewards(accounts[5], {'from': accounts[0]})
 
     fund_through_proxy.withdraw(5000000, {'from': accounts[1]})
 

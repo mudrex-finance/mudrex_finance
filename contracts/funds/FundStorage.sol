@@ -8,7 +8,7 @@ contract FundStorage is Initializable {
   bytes32 internal constant _UNDERLYING_SLOT = 0xb95b06046f468e8441830797ac9acc485ce2fadf4e07e35b01dc79368bf03188;
   bytes32 internal constant _UNDERLYING_UNIT_SLOT = 0xdb07622b1bd87eaa3d4422a4b4b176cf0a9fb09976d65f4178028ad157af3437;
   bytes32 internal constant _FUND_MANAGER_SLOT = 0x17f7ba76b5fc45dcfa067fab67ef2ac654842690c91910585d005e158d96eae3;
-  bytes32 internal constant _REWARDS_SLOT = 0x58c27fef89139117534964873d9bc88d4e406f983b4f19ba70545153b1612ef3;
+  bytes32 internal constant _PLATFORM_REWARDS_SLOT = 0x0e19fa69f4306877e41aea1a4be0c56b601dabc4b3688f0f906170e460ecbf69;
   bytes32 internal constant _DEPOSIT_LIMIT_SLOT = 0x1fc345aeacb2504bb144c6322cd6f959b8b22b7fa191c3f41903e75c2c0f868f;
   bytes32 internal constant _DEPOSIT_LIMIT_TX_MAX_SLOT = 0x8d1e87b0383d284ed35ad63c78444eea7be5fb8b2b84cef16330d84b40f3546b;
   bytes32 internal constant _DEPOSIT_LIMIT_TX_MIN_SLOT = 0x3f27a8341c446e0cdd0ab71b13137590d4aec3c514fdde59077ab96c7fe8e967;
@@ -27,7 +27,7 @@ contract FundStorage is Initializable {
     assert(_UNDERLYING_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.underlying")) - 1));
     assert(_UNDERLYING_UNIT_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.underlyingUnit")) - 1));
     assert(_FUND_MANAGER_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.fundManager")) - 1));
-    assert(_REWARDS_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.rewards")) - 1));
+    assert(_PLATFORM_REWARDS_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.platformRewards")) - 1));
     assert(_DEPOSIT_LIMIT_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositLimit")) - 1));
     assert(_DEPOSIT_LIMIT_TX_MAX_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositLimitTxMax")) - 1));
     assert(_DEPOSIT_LIMIT_TX_MIN_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositLimitTxMin")) - 1));
@@ -48,12 +48,12 @@ contract FundStorage is Initializable {
     address _underlying,
     uint256 _underlyingUnit,
     address _fundManager,
-    address _rewards
+    address _platformRewards
   ) public initializer {
     _setUnderlying(_underlying);
     _setUnderlyingUnit(_underlyingUnit);
     _setFundManager(_fundManager);
-    _setRewards(_rewards);
+    _setPlatformRewards(_platformRewards);
     _setDepositLimit(0);
     _setDepositLimitTxMax(0);
     _setDepositLimitTxMin(0);
@@ -93,12 +93,12 @@ contract FundStorage is Initializable {
     return getAddress(_FUND_MANAGER_SLOT);
   }
 
-  function _setRewards(address _rewards) internal {
-    setAddress(_REWARDS_SLOT, _rewards);
+  function _setPlatformRewards(address _rewards) internal {
+    setAddress(_PLATFORM_REWARDS_SLOT, _rewards);
   }
 
-  function _rewards() internal view returns (address) {
-    return getAddress(_REWARDS_SLOT);
+  function _platformRewards() internal view returns (address) {
+    return getAddress(_PLATFORM_REWARDS_SLOT);
   }
 
   function _setDepositLimit(uint256 _value) internal {

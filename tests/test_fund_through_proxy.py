@@ -18,7 +18,7 @@ def test_initialization(fund_through_proxy, accounts, token):
     assert fund_through_proxy.performanceFeeFund() == 0
     assert fund_through_proxy.platformFee() == 0
     assert fund_through_proxy.withdrawalFee() == 0
-    assert fund_through_proxy.getPricePerFullShare() == fund_through_proxy.underlyingUnit()
+    assert fund_through_proxy.getPricePerShare() == fund_through_proxy.underlyingUnit()
     assert fund_through_proxy.getStrategyList() == []
 
 def test_set_fund_manager(fund_through_proxy, accounts):

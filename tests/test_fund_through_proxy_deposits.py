@@ -34,4 +34,4 @@ def test_price_per_share_after_first_deposit(fund_through_proxy, accounts, token
     token.approve(fund_through_proxy, 50, {'from': accounts[1]})
     fund_through_proxy.deposit(50, {'from': accounts[1]})
     
-    assert fund_through_proxy.getPricePerFullShare() == fund_through_proxy.underlyingUnit()
+    assert fund_through_proxy.getPricePerShare() == fund_through_proxy.underlyingUnit()
