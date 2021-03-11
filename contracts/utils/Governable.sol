@@ -7,8 +7,8 @@ contract Governable is Initializable {
 
   event GovernanceUpdated(address governance);
 
-  bytes32 internal constant _GOVERNANCE_SLOT = 0xcda9a6b4b9d6bf2129b27a60d3a668c00468526758d2daf3ad15c6d27199cbc2;
-  bytes32 internal constant _PENDING_GOVERNANCE_SLOT = 0x9ab8554274867f10a81dfb4a6983625500f54f8ea6d2d4c54b9c7b2ca234c7e6;
+  bytes32 internal constant _GOVERNANCE_SLOT = 0x597f9c7c685b907e823520bd45aeb3d58b505f86b2e41cd5b4cd5b6c72782950;
+  bytes32 internal constant _PENDING_GOVERNANCE_SLOT = 0xcd77091f18f9504fccf6140ab99e20533c811d470bb9a5a983d0edc0720fbf8c;
 
   modifier onlyGovernance() {
     require(_governance() == msg.sender, "Not governance");
@@ -16,8 +16,8 @@ contract Governable is Initializable {
   }
 
   constructor() public {
-    assert(_GOVERNANCE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.governable.governance")) - 1));
-    assert(_PENDING_GOVERNANCE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.governable.pendingGovernance")) - 1));
+    assert(_GOVERNANCE_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.governable.governance")) - 1));
+    assert(_PENDING_GOVERNANCE_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.governable.pendingGovernance")) - 1));
   }
 
   function initializeGovernance(address _governance) public initializer {

@@ -5,42 +5,42 @@ import "OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts/proxy/In
 
 contract FundStorage is Initializable {
 
-  bytes32 internal constant _UNDERLYING_SLOT = 0xb95b06046f468e8441830797ac9acc485ce2fadf4e07e35b01dc79368bf03188;
-  bytes32 internal constant _UNDERLYING_UNIT_SLOT = 0xdb07622b1bd87eaa3d4422a4b4b176cf0a9fb09976d65f4178028ad157af3437;
-  bytes32 internal constant _FUND_MANAGER_SLOT = 0x17f7ba76b5fc45dcfa067fab67ef2ac654842690c91910585d005e158d96eae3;
-  bytes32 internal constant _PLATFORM_REWARDS_SLOT = 0x0e19fa69f4306877e41aea1a4be0c56b601dabc4b3688f0f906170e460ecbf69;
-  bytes32 internal constant _DEPOSIT_LIMIT_SLOT = 0x1fc345aeacb2504bb144c6322cd6f959b8b22b7fa191c3f41903e75c2c0f868f;
-  bytes32 internal constant _DEPOSIT_LIMIT_TX_MAX_SLOT = 0x8d1e87b0383d284ed35ad63c78444eea7be5fb8b2b84cef16330d84b40f3546b;
-  bytes32 internal constant _DEPOSIT_LIMIT_TX_MIN_SLOT = 0x3f27a8341c446e0cdd0ab71b13137590d4aec3c514fdde59077ab96c7fe8e967;
-  bytes32 internal constant _PERFORMANCE_FEE_FUND_SLOT = 0x67d7fa60453a87c46fdf39c2c97af9a4efa92447137fc01141db0c762bd177ed;
-  bytes32 internal constant _PLATFORM_FEE_SLOT = 0xdb914d4ecf1b46de61e1ef0abb3324d8ae5bb0f8e2d834e2a2c8ef6347fad40a;
-  bytes32 internal constant _WITHDRAWAL_FEE_SLOT = 0xf6e3df965b199051d61624db5fab1794c9669f468a90df79a78aa7b0e55b338a;
-  bytes32 internal constant _MAX_INVESTMENT_IN_STRATEGIES_SLOT = 0xac70a1670fe19ee7e0602c0950417634b6584c7b4232fa5df9f49111c5557934;
-  bytes32 internal constant _TOTAL_WEIGHT_IN_STRATEGIES_SLOT = 0x9133abd018b6fde28d66aca2ecd382fecf17ffa40fe22c4e0289322fefbd7b9e;
-  bytes32 internal constant _TOTAL_ACCOUNTED_SLOT = 0x9ead72750dc13281a9f039b34e3371c56895558984b60f278cb7add9f9149177;
-  bytes32 internal constant _TOTAL_INVESTED_SLOT = 0x98a6f29fda853c583d893d7dcade92c0eed126b239c85998829c2e1a68fac1b9;
-  bytes32 internal constant _DEPOSITS_PAUSED_SLOT = 0x34b904506aeff8cce013d1019a67832c48d47a000b028cb65d615b851146b9e7;
-  bytes32 internal constant _SHOULD_REBALANCE_SLOT = 0xdf9eebd73c8ef0a729535a9beb9ea86fe8f224c6cec5fa940c8f06696acf2b3f;
-  bytes32 internal constant _LAST_HARDWORK_TIMESTAMP_SLOT = 0x8a707ee777f050560006c09cf98a16653902a051a88d4d43dcad61827e3ab091;
+  bytes32 internal constant _UNDERLYING_SLOT = 0xe0dc1d429ff8628e5936b3d6a6546947e1cc9ea7415a59d46ce95b3cfa4442b9;
+  bytes32 internal constant _UNDERLYING_UNIT_SLOT = 0x4840b03aa097a422092d99dc6875c2b69e8f48c9af2563a0447f3b4e4928d962;
+  bytes32 internal constant _FUND_MANAGER_SLOT = 0x670552e214026020a9e6caa820519c7f879b21bd75b5571387d6a9cf8f94bd18;
+  bytes32 internal constant _PLATFORM_REWARDS_SLOT = 0x92260bfe68dd0f8a9f5439b75466781ba1ce44523ed1a3026a73eada49072e65;
+  bytes32 internal constant _DEPOSIT_LIMIT_SLOT = 0xca2f8a3e9ea81335bcce793cde55fc0c38129b594f53052d2bb18099ffa72613;
+  bytes32 internal constant _DEPOSIT_LIMIT_TX_MAX_SLOT = 0x769f312c3790719cf1ea5f75303393f080fd62be88d75fa86726a6be00bb5a24;
+  bytes32 internal constant _DEPOSIT_LIMIT_TX_MIN_SLOT = 0x9027949576d185c74d79ad3b8a8dbff32126f3a3ee140b346f146beb18234c85;
+  bytes32 internal constant _PERFORMANCE_FEE_FUND_SLOT = 0x5b8979500398f8fbeb42c36d18f31a76fd0ab30f4338d864e7d8734b340e9bb9;
+  bytes32 internal constant _PLATFORM_FEE_SLOT = 0x2084059f3bff3cc3fd204df32325dcb05f47c2f590aba5d103ec584523738e7a;
+  bytes32 internal constant _WITHDRAWAL_FEE_SLOT = 0x0fa90db0cd58feef247d70d3b21f64c03d0e3ec10eb297f015da0cc09eb3412c;
+  bytes32 internal constant _MAX_INVESTMENT_IN_STRATEGIES_SLOT = 0xe3b5969c9426551aa8f16dbc7b25042b9b9c9869b759c77a85f0b097ac363475;
+  bytes32 internal constant _TOTAL_WEIGHT_IN_STRATEGIES_SLOT = 0x63177e03c47ab825f04f5f8f2334e312239890e7588db78cabe10d7aec327fd2;
+  bytes32 internal constant _TOTAL_ACCOUNTED_SLOT = 0xa19f3b8a62465676ae47ab811ee15e3d2b68d88869cb38686d086a11d382f6bb;
+  bytes32 internal constant _TOTAL_INVESTED_SLOT = 0x49c84685200b42972f845832b2c3da3d71def653c151340801aeae053ce104e9;
+  bytes32 internal constant _DEPOSITS_PAUSED_SLOT = 0x3cefcfe9774096ac956c0d63992ea27a01fb3884a22b8765ad63c8366f90a9c8;
+  bytes32 internal constant _SHOULD_REBALANCE_SLOT = 0x7f8e3dfb98485aa419c1d05b6ea089a8cddbafcfcf4491db33f5d0b5fe4f32c7;
+  bytes32 internal constant _LAST_HARDWORK_TIMESTAMP_SLOT = 0x0260c2bf5555cd32cedf39c0fcb0eab8029c67b3d5137faeb3e24a500db80bc9;
 
   constructor() public {
-    assert(_UNDERLYING_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.underlying")) - 1));
-    assert(_UNDERLYING_UNIT_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.underlyingUnit")) - 1));
-    assert(_FUND_MANAGER_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.fundManager")) - 1));
-    assert(_PLATFORM_REWARDS_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.platformRewards")) - 1));
-    assert(_DEPOSIT_LIMIT_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositLimit")) - 1));
-    assert(_DEPOSIT_LIMIT_TX_MAX_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositLimitTxMax")) - 1));
-    assert(_DEPOSIT_LIMIT_TX_MIN_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositLimitTxMin")) - 1));
-    assert(_PERFORMANCE_FEE_FUND_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.performanceFeeFund")) - 1));
-    assert(_PLATFORM_FEE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.platformFee")) - 1));
-    assert(_WITHDRAWAL_FEE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.withdrawalFee")) - 1));
-    assert(_MAX_INVESTMENT_IN_STRATEGIES_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.maxInvestmentInStrategies")) - 1));
-    assert(_TOTAL_WEIGHT_IN_STRATEGIES_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.totalWeightInStrategies")) - 1));
-    assert(_TOTAL_ACCOUNTED_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.totalAccounted")) - 1));
-    assert(_TOTAL_INVESTED_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.totalInvested")) - 1));
-    assert(_DEPOSITS_PAUSED_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.depositsPaused")) - 1));
-    assert(_SHOULD_REBALANCE_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.shouldRebalance")) - 1));
-    assert(_LAST_HARDWORK_TIMESTAMP_SLOT == bytes32(uint256(keccak256("eip1967.mudrex.finance.fundStorage.lastHardworkTimestamp")) - 1));
+    assert(_UNDERLYING_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.underlying")) - 1));
+    assert(_UNDERLYING_UNIT_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.underlyingUnit")) - 1));
+    assert(_FUND_MANAGER_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.fundManager")) - 1));
+    assert(_PLATFORM_REWARDS_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.platformRewards")) - 1));
+    assert(_DEPOSIT_LIMIT_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.depositLimit")) - 1));
+    assert(_DEPOSIT_LIMIT_TX_MAX_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.depositLimitTxMax")) - 1));
+    assert(_DEPOSIT_LIMIT_TX_MIN_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.depositLimitTxMin")) - 1));
+    assert(_PERFORMANCE_FEE_FUND_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.performanceFeeFund")) - 1));
+    assert(_PLATFORM_FEE_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.platformFee")) - 1));
+    assert(_WITHDRAWAL_FEE_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.withdrawalFee")) - 1));
+    assert(_MAX_INVESTMENT_IN_STRATEGIES_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.maxInvestmentInStrategies")) - 1));
+    assert(_TOTAL_WEIGHT_IN_STRATEGIES_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.totalWeightInStrategies")) - 1));
+    assert(_TOTAL_ACCOUNTED_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.totalAccounted")) - 1));
+    assert(_TOTAL_INVESTED_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.totalInvested")) - 1));
+    assert(_DEPOSITS_PAUSED_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.depositsPaused")) - 1));
+    assert(_SHOULD_REBALANCE_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.shouldRebalance")) - 1));
+    assert(_LAST_HARDWORK_TIMESTAMP_SLOT == bytes32(uint256(keccak256("eip1967.mesh.finance.fundStorage.lastHardworkTimestamp")) - 1));
   }
 
 
